@@ -1,0 +1,22 @@
+project_id = "bqlorlnicdydulkexiuf"
+
+[functions.check-site-role]
+verify_jwt = false
+
+[functions.sync-staff-from-discord]
+verify_jwt = false
+
+[functions.check-police-role]
+verify_jwt = false
+
+[functions.save-police-handbook]
+verify_jwt = false
+
+[functions.restore-police-handbook-backup]
+verify_jwt = false
+
+[functions.ensure-handbook-daily-backup]
+verify_jwt = false
+
+[functions.check-module-role]
+verify_jwt = false

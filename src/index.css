@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;700;800&family=Share+Tech+Mono&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ChillRP — White/Black/Purple theme matching the logo */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 94%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 94%;
+
+    --primary: 271 76% 53%;          /* purple — logo glow */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 271 76% 53%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 13%;
+    --input: 0 0% 10%;
+    --ring: 271 76% 53%;
+
+    --radius: 0.5rem;
+
+    /* Neon palette — white + purple focus */
+    --neon-white: 0 0% 97%;
+    --neon-purple: 271 76% 65%;
+    --neon-purple-dim: 271 60% 45%;
+    --neon-red: 0 72% 51%;
+    --neon-yellow: 45 90% 55%;
+    --neon-green: 145 70% 48%;
+    --neon-cyan: 182 80% 55%;
+
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 271 76% 65%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 11%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 13%;
+    --sidebar-ring: 271 76% 65%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Exo 2', sans-serif;
+    background-image:
+      radial-gradient(ellipse at 30% 10%, hsl(271 76% 53% / 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 90%, hsl(271 76% 53% / 0.04) 0%, transparent 55%);
+  }
+  h1, h2, h3, h4 { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+  .mono { font-family: 'Share Tech Mono', monospace; }
+}
+
+@layer utilities {
+  /* Glassmorphism */
+  .glass {
+    background: hsl(0 0% 7% / 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(0 0% 100% / 0.06);
+  }
+  .glass-strong {
+    background: hsl(0 0% 5% / 0.88);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+  }
+
+  /* Purple glows */
+  .glow-purple {
+    box-shadow: 0 0 20px hsl(271 76% 65% / 0.45), 0 0 60px hsl(271 76% 65% / 0.2);
+  }
+  .glow-white {
+    box-shadow: 0 0 20px hsl(0 0% 100% / 0.25), 0 0 50px hsl(0 0% 100% / 0.08);
+  }
+  .glow-red {
+    box-shadow: 0 0 20px hsl(0 72% 51% / 0.4), 0 0 50px hsl(0 72% 51% / 0.2);
+  }
+  .glow-cyan {
+    box-shadow: 0 0 20px hsl(182 80% 55% / 0.4), 0 0 50px hsl(182 80% 55% / 0.2);
+  }
+
+  /* Text glows */
+  .text-glow-purple {
+    text-shadow: 0 0 12px hsl(271 76% 65% / 0.9), 0 0 35px hsl(271 76% 65% / 0.4);
+  }
+  .text-glow-white {
+    text-shadow: 0 0 10px hsl(0 0% 100% / 0.8), 0 0 30px hsl(0 0% 100% / 0.3);
+  }
+
+  /* Border helpers */
+  .border-neon-purple { border-color: hsl(271 76% 65% / 0.5); }
+  .border-neon-white { border-color: hsl(0 0% 100% / 0.25); }
+  .border-neon-red { border-color: hsl(0 72% 51% / 0.5); }
+  .border-neon-cyan { border-color: hsl(182 80% 55% / 0.5); }
+  .border-neon-yellow { border-color: hsl(45 90% 55% / 0.5); }
+  .border-neon-green { border-color: hsl(145 70% 48% / 0.5); }
+
+  /* Gradients */
+  .gradient-hero {
+    background: linear-gradient(to bottom, transparent 0%, hsl(0 0% 4% / 0.65) 55%, hsl(0 0% 4%) 100%);
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(0 0% 98%) 0%, hsl(271 76% 75%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-text-purple {
+    background: linear-gradient(135deg, hsl(271 76% 80%) 0%, hsl(271 50% 55%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-neon {
+    background: linear-gradient(135deg, hsl(0 0% 90%) 0%, hsl(271 76% 65%) 100%);
+  }
+
+  /* Separators */
+  .sep-purple {
+    height: 1px;
+    background: linear-gradient(to right, transparent, hsl(271 76% 65% / 0.5), transparent);
+  }
+  .sep-white {
+    height: 1px;
+    background: linear-gradient(to right, transparent, hsl(0 0% 100% / 0.15), transparent);
+  }
+
+  /* Scanlines */
+  .scanlines::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      hsl(0 0% 0% / 0.04) 2px, hsl(0 0% 0% / 0.04) 4px
+    );
+    pointer-events: none;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: hsl(0 0% 4%); }
+::-webkit-scrollbar-thumb { background: hsl(271 76% 65% / 0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(271 76% 65% / 0.7); }
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; text-shadow: 0 0 12px hsl(271 76% 65% / 0.9), 0 0 35px hsl(271 76% 65% / 0.4); }
+  50% { opacity: 0.7; text-shadow: 0 0 6px hsl(271 76% 65% / 0.5), 0 0 20px hsl(271 76% 65% / 0.2); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-pulse-neon { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-float { animation: float 3.5s ease-in-out infinite; }
+.animate-slide-in-up { animation: slide-in-up 0.6s ease-out both; }
+.animate-fade-in { animation: fade-in 0.4s ease-out both; }
