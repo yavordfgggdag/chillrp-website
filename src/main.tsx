@@ -38,7 +38,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
             style={{
               marginTop: "1.5rem",
               padding: "0.5rem 1rem",
-              background: "#7c3aed",
+              background: "#059669",
               color: "white",
               border: "none",
               borderRadius: "0.5rem",

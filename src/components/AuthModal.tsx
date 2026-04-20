@@ -2,9 +2,11 @@ import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getDiscordOAuthSignInOptions } from "@/lib/discordOAuth";
+import { isSupabaseConfiguredForAuth } from "@/lib/supabaseSiteUrl";
+import DiscordBrandIcon from "@/components/DiscordBrandIcon";
 
 /** Модал за вход с Discord – изключен от UI за сега, запазен за по-късно. */
-const DISCORD_ICON = "https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/discord.svg";
 
 interface AuthModalProps {
   onClose: () => void;
@@ -14,13 +16,21 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   const [discordLoading, setDiscordLoading] = useState(false);
 
   const handleDiscordLogin = async () => {
+    if (!isSupabaseConfiguredForAuth()) {
+      toast.error(
+        "Липсва VITE_SUPABASE_URL в .env. Виж .env.example — после npm run build ако ползваш preview.",
+      );
+      return;
+    }
     setDiscordLoading(true);
     try {
+      const currentPath = window.location.pathname + window.location.search + window.location.hash;
+      if (currentPath && currentPath !== "/auth/callback") {
+        localStorage.setItem("chillrp_post_auth_path", currentPath);
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "discord",
-        options: {
-          redirectTo: window.location.origin,
-        },
+        options: getDiscordOAuthSignInOptions(),
       });
       if (error) {
         toast.error("Грешка при вход с Discord.");
@@ -39,15 +49,15 @@ export default function AuthModal({ onClose }: AuthModalProps) {
       className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="glass-strong border border-neon-purple/40 rounded-2xl max-w-sm w-full animate-slide-in-up p-6">
+      <div className="glass-strong border border-primary/40 rounded-2xl max-w-sm w-full animate-slide-in-up p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="font-heading font-black text-lg tracking-widest uppercase text-neon-purple">
+            <h2 className="font-heading font-black text-lg tracking-widest uppercase text-primary">
               🔑 Влез в акаунта
             </h2>
-            <p className="text-xs text-muted-foreground font-body mt-0.5">ChillRP Platform</p>
+            <p className="text-xs text-muted-foreground font-body mt-0.5">TLR Platform</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button aria-label="Затвори" onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -55,13 +65,13 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         <button
           onClick={handleDiscordLogin}
           disabled={discordLoading}
-          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-heading font-bold text-sm tracking-wider transition-all disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-white/15 text-white font-heading font-bold text-sm tracking-wider transition-all disabled:opacity-50"
         >
           {discordLoading ? (
             <Loader2 size={20} className="animate-spin" />
           ) : (
             <>
-              <img src={DISCORD_ICON} alt="" className="w-5 h-5 invert" width={20} height={20} />
+              <DiscordBrandIcon size={20} className="w-5 h-5 text-white" />
               Влез с Discord
             </>
           )}

@@ -1,0 +1,20 @@
+# Пълен HTTPS URL към Supabase Edge Function minecraft-shop-claim
+# Пример: https://abcdefgh.supabase.co/functions/v1/minecraft-shop-claim
+api-url: ""
+
+# Същият секрет като MC_SHOP_CLAIM_SECRET в Supabase (Edge Function Secrets)
+secret: ""
+
+# Cooldown между опити (секунди)
+cooldown-seconds: 45
+
+# Само логва командите в конзолата, без изпълнение (тест)
+dry-run: false
+
+# Опционално: допълнителни конзолни команди по точно име на продукт (както в сайта).
+# Плейсхолдъри: {player} {uuid}
+# Пример (махни празния map по-горе и ползвай структура като тази):
+# extra-commands-by-product:
+#   'VIP Rank':
+#     - 'lp user {player} parent set vip'
+extra-commands-by-product: {}

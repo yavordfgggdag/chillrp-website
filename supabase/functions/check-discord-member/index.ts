@@ -49,7 +49,7 @@ serve(async (req) => {
     }
 
     const members = await res.json();
-    const found = members.some((m: any) =>
+    const found = members.some((m: { user?: { username?: string; global_name?: string } }) =>
       m.user?.username?.toLowerCase() === username ||
       m.user?.global_name?.toLowerCase() === username
     );

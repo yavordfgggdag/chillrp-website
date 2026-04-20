@@ -1,16 +1,73 @@
 import { z } from "zod";
-import { supabase } from "@/lib/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
+/** По подразбиране по-висок лимит, за да минават кратки MP4/WebM клипове в галерията; намали през .env при нужда. */
 const maxSizeMb =
-  Number(import.meta.env.VITE_UPLOAD_MAX_FILE_SIZE_MB ?? "10") || 10;
+  Number(import.meta.env.VITE_UPLOAD_MAX_FILE_SIZE_MB ?? "150") || 150;
+
+const DEFAULT_ALLOWED_MIMES =
+  "image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/quicktime,video/ogg,video/x-matroska,audio/mpeg,audio/mp3,audio/mp4,audio/wav,audio/ogg";
 
 const allowedMimeTypes = String(
-  import.meta.env.VITE_UPLOAD_ALLOWED_MIME_TYPES ??
-    "image/jpeg,image/png,image/webp,image/avif,video/mp4,video/webm"
+  import.meta.env.VITE_UPLOAD_ALLOWED_MIME_TYPES ?? DEFAULT_ALLOWED_MIMES
 )
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
+
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  ogv: "video/ogg",
+  mkv: "video/x-matroska",
+};
+
+/** MIME за Storage Content-Type и валидация (попълва от разширение, ако браузърът не зададе type). */
+export function resolveUploadMimeType(file: File): string {
+  if (file.type && file.type !== "application/octet-stream") {
+    return file.type;
+  }
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  return (ext && EXT_TO_MIME[ext]) || file.type || "application/octet-stream";
+}
+
+export function getMaxUploadSizeMb(): number {
+  return maxSizeMb;
+}
+
+export function assertImageFileForUpload(file: File): void {
+  const t = resolveUploadMimeType(file);
+  if (!t.startsWith("image/")) {
+    throw new Error("Нужен е файл снимка (PNG, JPG, WebP, GIF…).");
+  }
+  if (file.size > maxSizeMb * 1024 * 1024) {
+    throw new Error(`Файлът е твърде голям. Максимум ${maxSizeMb} MB.`);
+  }
+}
+
+/** Снимки, видео клипове и MP3 (и др. по whitelist в env). */
+export function assertFileAllowedForUpload(file: File): void {
+  const t = resolveUploadMimeType(file);
+  if (!allowedMimeTypes.includes(t)) {
+    throw new Error(
+      `Непозволен тип файл (${t}). Разрешени са снимки, видео (MP4/WebM/MOV) и аудио (MP3 и др.). Провери VITE_UPLOAD_ALLOWED_MIME_TYPES.`
+    );
+  }
+  if (file.size > maxSizeMb * 1024 * 1024) {
+    throw new Error(`Файлът е твърде голям. Максимум ${maxSizeMb} MB.`);
+  }
+}
 
 export const mediaAssetSchema = z.object({
   id: z.string().uuid(),
@@ -55,14 +112,12 @@ export async function uploadMedia(
   const parsed = uploadMediaInputSchema.parse(input);
   const { file, folder } = parsed;
 
-  if (file.size > maxSizeMb * 1024 * 1024) {
-    throw new Error(
-      `Файлът е твърде голям. Максимум ${maxSizeMb}MB.`
-    );
-  }
-
-  if (!allowedMimeTypes.includes(file.type)) {
+  const mime = resolveUploadMimeType(file);
+  if (!allowedMimeTypes.includes(mime)) {
     throw new Error("Невалиден тип файл за качване.");
+  }
+  if (file.size > maxSizeMb * 1024 * 1024) {
+    throw new Error(`Файлът е твърде голям. Максимум ${maxSizeMb}MB.`);
   }
 
   const ext = file.name.split(".").pop() || "bin";
@@ -72,7 +127,7 @@ export async function uploadMedia(
     .from("uploads")
     .upload(path, file, {
       upsert: false,
-      contentType: file.type,
+      contentType: mime,
     });
 
   if (uploadError) {
@@ -91,7 +146,7 @@ export async function uploadMedia(
       bucket_name: "uploads",
       path,
       url,
-      mime_type: file.type,
+      mime_type: mime,
       size_bytes: file.size,
       is_public: parsed.isPublic,
       page: parsed.page ?? null,
@@ -145,4 +200,3 @@ export async function listMediaAssets(opts?: {
   if (!data) return [];
   return z.array(mediaAssetSchema).parse(data);
 }
-

@@ -82,7 +82,7 @@ https://discord.com/api/oauth2/authorize?client_id=1472329824369508413&redirect_
 - Ако пак излезе 400 → в Discord Developer Portal премахни redirect-а и го добави отново като точно: `https://zbvqakalrxaxkwbpmjhn.supabase.co/auth/v1/callback` (без интервал и без `/` в края).
 
 **2. В Supabase Discord provider**  
-- Client ID да е **само цифри**: `1472329824369508413` (не „CHILLRP“ и без кавички).
+- Client ID да е **само цифри**: `1472329824369508413` (не буквен низ като „TLR“ и без кавички).
 - Client Secret да е копиран от Discord → OAuth2 (или „Reset Secret“ в Discord и после новият в Supabase).
 - Натисни **Save** и изчакай малко преди нов опит.
 

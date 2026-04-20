@@ -1,4 +1,6 @@
-project_id = "bqlorlnicdydulkexiuf"
+# Нов проект за този сайт. Замени с реалния ref от Dashboard (URL) или пусни:
+#   npx supabase login && npx supabase link --project-ref <PROJECT_REF>
+project_id = "your-project-ref"
 
 [functions.check-site-role]
 verify_jwt = false
@@ -18,5 +20,51 @@ verify_jwt = false
 [functions.ensure-handbook-daily-backup]
 verify_jwt = false
 
-[functions.check-module-role]
+[functions.check-hospital-role]
+verify_jwt = false
+
+[functions.check-service-role]
+verify_jwt = false
+
+[functions.check-obshtina-role]
+verify_jwt = false
+
+[functions.log-activity]
+verify_jwt = false
+
+[functions.send-discord-dm-admin]
+verify_jwt = false
+
+# Извикват се от сайта с user JWT; по подразбиране Dashboard връща 401 ако JWT проверката е включена.
+[functions.notify-discord-dm]
+verify_jwt = false
+
+[functions.notify-discord-gang]
+verify_jwt = false
+
+[functions.notify-discord-purchase]
+verify_jwt = false
+
+[functions.notify-shop-ticket-code]
+verify_jwt = false
+
+[functions.notify-admin-log]
+verify_jwt = false
+
+[functions.list-discord-role-members]
+verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false
+
+[functions.stripe-webhook-opcrime-gc]
+verify_jwt = false
+
+[functions.redeem-store-purchase]
+verify_jwt = false
+
+[functions.minecraft-shop-claim]
+verify_jwt = false
+
+[functions.add-discord-guild-member]
 verify_jwt = false

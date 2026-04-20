@@ -8,9 +8,11 @@ export default {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
       fontFamily: {
-        heading: ['Rajdhani', 'sans-serif'],
-        body: ['Exo 2', 'sans-serif'],
-        mono: ['Share Tech Mono', 'monospace'],
+        /** TLR Design v2 — display / panel titles */
+        heading: ['"Sofia Sans Extra Condensed"', "sans-serif"],
+        /** UI body */
+        body: ['Poppins', "sans-serif"],
+        mono: ['ui-monospace', "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -22,7 +24,8 @@ export default {
         secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
         destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
         muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
-        accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+        /** Тъмно-зелен panel lift — brand emerald е `primary` / CSS `--accent` */
+        accent: { DEFAULT: "hsl(var(--surface-accent))", foreground: "hsl(var(--surface-accent-foreground))" },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         sidebar: {
@@ -37,15 +40,35 @@ export default {
         },
         neon: {
           white: "hsl(var(--neon-white))",
-          purple: "hsl(var(--neon-purple))",
+          /** @deprecated use `text-primary` — kept for old saved class strings */
+          brand: "hsl(var(--primary))",
+          /** Критично / изтриване (legacy име neon-red) */
           red: "hsl(var(--neon-red))",
           yellow: "hsl(var(--neon-yellow))",
           green: "hsl(var(--neon-green))",
           cyan: "hsl(var(--neon-cyan))",
         },
+        server: {
+          DEFAULT: "#10b981",
+          dark: "#047857",
+          light: "#6ee7b7",
+        },
+      },
+      boxShadow: {
+        /** Card / panel depth (Design v2) */
+        card: "0 4px 4px rgba(0, 0, 0, 0.25)",
+        "server-glow":
+          "0 0 0 1px rgba(16, 185, 129, 0.35), 0 4px 4px rgba(0, 0, 0, 0.4), 0 0 32px rgba(4, 120, 87, 0.2), 0 0 48px rgba(16, 185, 129, 0.08)",
+        "server-glow-sm": "0 0 20px rgba(16, 185, 129, 0.28), 0 0 28px rgba(4, 120, 87, 0.1), 0 4px 4px rgba(0, 0, 0, 0.35)",
       },
       borderRadius: {
-        lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)",
+        none: "0",
+        sm: "max(0px, calc(var(--radius) - 2px))",
+        md: "max(0px, calc(var(--radius) - 1px))",
+        lg: "var(--radius)",
+        xl: "calc(var(--radius) + 2px)",
+        "2xl": "calc(var(--radius) + 4px)",
+        "3xl": "calc(var(--radius) + 6px)",
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
@@ -59,5 +82,6 @@ export default {
       },
     },
   },
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Tailwind expects require for plugins in config
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;

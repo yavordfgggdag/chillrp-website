@@ -110,15 +110,25 @@ export type Database = {
           id: string
           image_url: string | null
           includes: string[]
+          ingame_grants_json: Json | null
+          ingame_player_hint: string | null
           is_active: boolean
           long_description: string
+          minecraft_grants_json: Json | null
           name: string
+          opcrime_gc_amount: number | null
+          opcrime_org_money_account: string
+          opcrime_org_money_amount: number | null
+          opcrime_use_redeem_code: boolean
           original_price: string
           price: string
+          product_media_urls: string[]
           slug: string
           sort_order: number
           stripe_price: string | null
           subtitle: string
+          transfer_note_template: string | null
+          discord_purchase_dm_template: string | null
           updated_at: string
         }
         Insert: {
@@ -129,15 +139,25 @@ export type Database = {
           id?: string
           image_url?: string | null
           includes?: string[]
+          ingame_grants_json?: Json | null
+          ingame_player_hint?: string | null
           is_active?: boolean
           long_description?: string
+          minecraft_grants_json?: Json | null
           name: string
+          opcrime_gc_amount?: number | null
+          opcrime_org_money_account?: string
+          opcrime_org_money_amount?: number | null
+          opcrime_use_redeem_code?: boolean
           original_price: string
           price: string
+          product_media_urls?: string[]
           slug: string
           sort_order?: number
           stripe_price?: string | null
           subtitle?: string
+          transfer_note_template?: string | null
+          discord_purchase_dm_template?: string | null
           updated_at?: string
         }
         Update: {
@@ -148,15 +168,25 @@ export type Database = {
           id?: string
           image_url?: string | null
           includes?: string[]
+          ingame_grants_json?: Json | null
+          ingame_player_hint?: string | null
           is_active?: boolean
           long_description?: string
+          minecraft_grants_json?: Json | null
           name?: string
+          opcrime_gc_amount?: number | null
+          opcrime_org_money_account?: string
+          opcrime_org_money_amount?: number | null
+          opcrime_use_redeem_code?: boolean
           original_price?: string
           price?: string
+          product_media_urls?: string[]
           slug?: string
           sort_order?: number
           stripe_price?: string | null
           subtitle?: string
+          transfer_note_template?: string | null
+          discord_purchase_dm_template?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -164,21 +194,120 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          discord_dm_blocked_at: string | null
+          discord_id: string | null
           discord_username: string | null
           id: string
+          qb_citizenid: string | null
           username: string | null
         }
         Insert: {
           created_at?: string | null
+          discord_dm_blocked_at?: string | null
+          discord_id?: string | null
           discord_username?: string | null
           id: string
+          qb_citizenid?: string | null
           username?: string | null
         }
         Update: {
           created_at?: string | null
+          discord_dm_blocked_at?: string | null
+          discord_id?: string | null
           discord_username?: string | null
           id?: string
+          qb_citizenid?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      pending_revolut_payments: {
+        Row: {
+          amount_eur: number
+          created_at: string
+          discord_username: string | null
+          id: string
+          items_json: Json
+          payment_method: string
+          reference: string
+          status: string
+          summary: string
+          transfer_note_full: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_eur: number
+          created_at?: string
+          discord_username?: string | null
+          id?: string
+          items_json?: Json
+          payment_method?: string
+          reference: string
+          status?: string
+          summary: string
+          transfer_note_full?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_eur?: number
+          created_at?: string
+          discord_username?: string | null
+          id?: string
+          items_json?: Json
+          payment_method?: string
+          reference?: string
+          status?: string
+          summary?: string
+          transfer_note_full?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shop_ticket_checkouts: {
+        Row: {
+          amount_display: string
+          created_at: string
+          discord_username: string | null
+          id: string
+          paid_at: string | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          quantity: number
+          status: string
+          ticket_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_display: string
+          created_at?: string
+          discord_username?: string | null
+          id?: string
+          paid_at?: string | null
+          product_id: string
+          product_name: string
+          product_slug: string
+          quantity?: number
+          status?: string
+          ticket_code?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_display?: string
+          created_at?: string
+          discord_username?: string | null
+          id?: string
+          paid_at?: string | null
+          product_id?: string
+          product_name?: string
+          product_slug?: string
+          quantity?: number
+          status?: string
+          ticket_code?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -188,6 +317,7 @@ export type Database = {
           created_at: string
           discord_username: string | null
           id: string
+          minecraft_claimed_at: string | null
           price_eur: number | null
           product_name: string
           stripe_session_id: string | null
@@ -198,6 +328,7 @@ export type Database = {
           created_at?: string
           discord_username?: string | null
           id?: string
+          minecraft_claimed_at?: string | null
           price_eur?: number | null
           product_name: string
           stripe_session_id?: string | null
@@ -208,6 +339,7 @@ export type Database = {
           created_at?: string
           discord_username?: string | null
           id?: string
+          minecraft_claimed_at?: string | null
           price_eur?: number | null
           product_name?: string
           stripe_session_id?: string | null
@@ -278,6 +410,90 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      opcrime_gc_deliveries: {
+        Row: {
+          created_at: string
+          delivery_note: string | null
+          gc_amount: number
+          id: string
+          qb_citizenid: string | null
+          status: string
+          stripe_session_id: string
+          supabase_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_note?: string | null
+          gc_amount: number
+          id?: string
+          qb_citizenid?: string | null
+          status?: string
+          stripe_session_id: string
+          supabase_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          delivery_note?: string | null
+          gc_amount?: number
+          id?: string
+          qb_citizenid?: string | null
+          status?: string
+          stripe_session_id?: string
+          supabase_user_id?: string | null
+        }
+        Relationships: []
+      }
+      store_redeem_codes: {
+        Row: {
+          code: string
+          created_at: string
+          grants: Json
+          id: string
+          redeemed_at: string | null
+          redeemed_citizenid: string | null
+          status: string
+          stripe_session_id: string
+          supabase_user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          grants?: Json
+          id?: string
+          redeemed_at?: string | null
+          redeemed_citizenid?: string | null
+          status?: string
+          stripe_session_id: string
+          supabase_user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          grants?: Json
+          id?: string
+          redeemed_at?: string | null
+          redeemed_citizenid?: string | null
+          status?: string
+          stripe_session_id?: string
+          supabase_user_id?: string | null
+        }
+        Relationships: []
+      }
+      stripe_checkout_buyer_dm_sent: {
+        Row: {
+          checkout_session_id: string
+          sent_at: string
+        }
+        Insert: {
+          checkout_session_id: string
+          sent_at?: string
+        }
+        Update: {
+          checkout_session_id?: string
+          sent_at?: string
         }
         Relationships: []
       }
@@ -401,6 +617,66 @@ export type Database = {
         }
         Relationships: []
       }
+      obshtina_invoices: {
+        Row: {
+          id: string
+          created_at: string
+          invoice_date: string
+          client_name: string
+          description: string
+          amount: string
+          issued_by_user_id: string | null
+          issued_by_name: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          invoice_date?: string
+          client_name?: string
+          description?: string
+          amount?: string
+          issued_by_user_id?: string | null
+          issued_by_name?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          invoice_date?: string
+          client_name?: string
+          description?: string
+          amount?: string
+          issued_by_user_id?: string | null
+          issued_by_name?: string | null
+        }
+        Relationships: []
+      }
+      obshtina_shifts: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          user_name: string
+          started_at: string
+          ended_at: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          user_name?: string
+          started_at: string
+          ended_at?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          user_name?: string
+          started_at?: string
+          ended_at?: string | null
+        }
+        Relationships: []
+      }
       staff_members: {
         Row: {
           avatar_scale: string | null
@@ -464,6 +740,270 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      police_handbook: {
+        Row: {
+          id: string
+          data: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          data?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          data?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      police_handbook_backups: {
+        Row: {
+          id: string
+          created_at: string
+          data: Json
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          data: Json
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          data?: Json
+        }
+        Relationships: []
+      }
+      web_logs: {
+        Row: {
+          id: string
+          event: string
+          details: string
+          page: string
+          user_id: string | null
+          user_email: string | null
+          module: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event: string
+          details?: string
+          page?: string
+          user_id?: string | null
+          user_email?: string | null
+          module?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event?: string
+          details?: string
+          page?: string
+          user_id?: string | null
+          user_email?: string | null
+          module?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      contact_leads: {
+        Row: {
+          id: string
+          name: string | null
+          email: string | null
+          message: string
+          status: string
+          source_page: string | null
+          meta: Json
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+          handled_by: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string | null
+          email?: string | null
+          message: string
+          status?: string
+          source_page?: string | null
+          meta?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+          handled_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string | null
+          email?: string | null
+          message?: string
+          status?: string
+          source_page?: string | null
+          meta?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+          handled_by?: string | null
+        }
+        Relationships: []
+      }
+      navigation_links: {
+        Row: {
+          id: string
+          location: string
+          label: string
+          url: string
+          parent_id: string | null
+          sort_order: number
+          is_external: boolean
+          is_enabled: boolean
+          icon: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          location: string
+          label: string
+          url: string
+          parent_id?: string | null
+          sort_order?: number
+          is_external?: boolean
+          is_enabled?: boolean
+          icon?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          location?: string
+          label?: string
+          url?: string
+          parent_id?: string | null
+          sort_order?: number
+          is_external?: boolean
+          is_enabled?: boolean
+          icon?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      page_sections: {
+        Row: {
+          id: string
+          page: string
+          section_key: string
+          title: string | null
+          subtitle: string | null
+          sort_order: number
+          is_enabled: boolean
+          settings: Json
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          page: string
+          section_key: string
+          title?: string | null
+          subtitle?: string | null
+          sort_order?: number
+          is_enabled?: boolean
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          page?: string
+          section_key?: string
+          title?: string | null
+          subtitle?: string | null
+          sort_order?: number
+          is_enabled?: boolean
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      media_assets: {
+        Row: {
+          id: string
+          bucket_name: string
+          path: string
+          url: string
+          mime_type: string | null
+          size_bytes: number | null
+          is_public: boolean
+          title: string | null
+          alt: string | null
+          tags: string[]
+          page: string | null
+          section_key: string | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          bucket_name?: string
+          path: string
+          url: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          is_public?: boolean
+          title?: string | null
+          alt?: string | null
+          tags?: string[]
+          page?: string | null
+          section_key?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          bucket_name?: string
+          path?: string
+          url?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          is_public?: boolean
+          title?: string | null
+          alt?: string | null
+          tags?: string[]
+          page?: string | null
+          section_key?: string | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }

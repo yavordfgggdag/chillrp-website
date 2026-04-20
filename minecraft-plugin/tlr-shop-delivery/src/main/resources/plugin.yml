@@ -1,0 +1,12 @@
+name: TlrShopDelivery
+version: 1.0.0
+main: net.thelastrepublic.shopdelivery.TlrShopDeliveryPlugin
+api-version: '1.21'
+authors: [ TLR ]
+description: Взима покупки от уеб магазина (Supabase / minecraft-shop-claim).
+
+commands:
+  claimshop:
+    description: Вземи наградите от уеб магазина за този Minecraft акаунт.
+    usage: /claimshop
+    aliases: [tlrclaim, tlrstore]

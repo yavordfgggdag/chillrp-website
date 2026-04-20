@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
             { name: "👥 Членове", value: members || "—", inline: false },
             { name: "💬 Discord", value: discord_username || "—", inline: true },
           ],
-          footer: { text: "ChillRP • Admin Panel → /admin" },
+          footer: { text: "TLR • Admin Panel → /admin" },
           timestamp: new Date().toISOString(),
         },
       ],

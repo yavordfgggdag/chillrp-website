@@ -1,151 +1,314 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
+const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Max-Age": "86400",
 };
 
-const SYSTEM_PROMPT = `Ти си ChillBot — официалният AI асистент на ChillRP FiveM Roleplay сървъра. Говориш САМО на български, с приятелски и неформален gamer тон. Отговаряш кратко (до 2–3 изречения, максимум 4 при нужда). Отговаряш САМО на теми свързани с ChillRP, сайта и Discord. Не измисляш информация. Умерени емоджита 🎮🔥✅
+const SYSTEM_PROMPT_TEMPLATE = `Ти си TLR RP бот — официалният AI асистент на уебсайта TLR RP (Minecraft roleplay) и общността. Говориш САМО на български, приятелски gamer тон. Отговаряш кратко (2–3 изречения, до 4 при нужда). Теми: TLR RP, Minecraft, roleplay, сайтът, Discord, магазин, правила, кандидатури, общност. Не измисляш факти — ако нещо липсва, прати към сайта или Discord. Умерени емоджита 🎮🔥✅
 
 ═══ ФОРМАТ НА ОТГОВОРА (СТРОГО) ═══
-- НЕ използвай кавички от никакъв вид — нито единични, нито двойни, нито умни/типографски. Пиши директно без кавички.
-- Не цитирай думи/проценти. Пиши директно: 50% намаление.
-- Не използвай markdown code blocks.
-- Ако потребителят напише точно debug, добави последен ред JSON (виж DEBUG).
-- Когато потребителят пита къде е нещо (магазин, правила, генг, FAQ и т.н.), ВИНАГИ сложи съответния линк на НОВ РЕД в края на съобщението. Не слагай линка вътре в текста.
+- БЕЗ кавички — нито единични, нито двойни, нито типографски.
+- Пиши директно: 50% намаление (без кавички около числата).
+- Без markdown code blocks.
+- Ако потребителят напише точно debug — последен ред JSON (виж DEBUG).
+- Линкове: ВИНАГИ на ОТДЕЛЕН НОВ РЕД в КРАЯ. Не вграждай URL в средата на изречение.
+
+═══ БРЕНД И СЪРВЪР ═══
+- Име: TLR RP (Minecraft roleplay). На сайта и в Discord е един и същ проект.
+- Платформа: Minecraft (Java). Свързване: адрес на сървъра по-долу (__GAME_CONNECT__) и инструкции от началната страница / FAQ.
+- RP: уважителен roleplay; правилата са на сайта в раздел Правила.
+- Ако датите в админ site_settings са различни — приоритет имат АКТУАЛНИ ДАННИ ОТ САЙТА по-долу в промпта.
 
 ═══ ОФИЦИАЛНИ ЛИНКОВЕ (СТРОГО) ═══
-Единственият официален сайт е: https://chillroleplay.store
-Discord сървър: https://discord.gg/chillroleplay
-Когато даваш линк, използвай САМО тези домейни.
-Винаги давай пълен линк, не само път.
-- Магазин: https://chillroleplay.store/shop
-- FAQ: https://chillroleplay.store/faq
-- Профил: https://chillroleplay.store/profile
-- Безплатен генг: https://chillroleplay.store/gangs
-- Discord правила: https://chillroleplay.store/rules/discord
-- Сървърни правила: https://chillroleplay.store/rules/server
-- Криминални правила: https://chillroleplay.store/rules/crime
-НЕ измисляй други домейни или линкове.
+Сайт: __SITE_BASE__
+Discord: __DISCORD__
+Minecraft сървър (адрес за клиента): __GAME_CONNECT__
 
-═══ ИНФОРМАЦИЯ ЗА СЪРВЪРА ═══
-- ChillRP е FiveM ролеплей сървър с акцент върху реалистичен и качествен RP (Chill Realism)
-- Създаден е от нулата — уникални скриптове и система
-- Discord: https://discord.gg/chillroleplay
-- Ако някой пита как да влезе в Discord или къде е Discord-а, давай ВИНАГИ този линк: https://discord.gg/chillroleplay
-- СТАРТ НА СЪРВЪРА: 20.03.2026 в 20:00 часа (българско време)
-- Преди старта има 50% намаление на всички продукти в магазина
+Пълни пътища (линк на нов ред в отговора):
+- Начало: __SITE_BASE__/
+- Режими / сървъри: __SITE_BASE__/servers
+- Магазин: __SITE_BASE__/shop
+- Продукт: __SITE_BASE__/shop/<slug> (slug от каталога)
+- FAQ: __SITE_BASE__/faq
+- Профил: __SITE_BASE__/profile
+- Успешно плащане (след някои потоци): __SITE_BASE__/payment-success
+- Кандидатури (генг и др.): __SITE_BASE__/applications
+- Правила (хъб): __SITE_BASE__/rules
+- Поверителност: __SITE_BASE__/privacy
+- Бисквитки: __SITE_BASE__/cookies
+- Условия: __SITE_BASE__/terms
 
-═══ САЙТ И НАВИГАЦИЯ ═══
-- Начало: https://chillroleplay.store/
-- Магазин: https://chillroleplay.store/shop
-- Discord правила: https://chillroleplay.store/rules/discord
-- Сървърни правила: https://chillroleplay.store/rules/server
-- Криминални правила: https://chillroleplay.store/rules/crime
-- Безплатен Генг: https://chillroleplay.store/gangs (оригинална концепция, макс 6 члена)
-- FAQ: https://chillroleplay.store/faq
-- Профил: https://chillroleplay.store/profile (изисква регистрация)
+Не измисляй други домейни — ползвай само __SITE_BASE__ за сайта.
 
-═══ МАГАЗИН (ПРОДУКТИ И ЦЕНИ — 50% ОТСТЪПКА) ═══
-Плащане чрез Stripe: карти, PayPal, Apple Pay, Google Pay и други методи.
+═══ КАК СЕ ВЛИЗА В ИГРАТА ═══
+1) Влез в официалния Discord: __DISCORD__
+2) В Minecraft Java се свържи с адреса: __GAME_CONNECT__ (ако е placeholder — кажи да гледат началната страница и FAQ).
+3) Роли и тикети: координация в Discord със staff.
 
-VIP Пакети:
-- Coal Пакет: 2.49 EUR (от 4.99 EUR) — приоритетен слот, Coal роля, VIP чат
-- Gold Пакет: 10.00 EUR (от 20.00 EUR) — всичко от Coal + кастом номер, апартамент, Gold роля
-- Diamond Пакет: 25.00 EUR (от 50.00 EUR) — всичко от Gold + Diamond роля, персонализиран бадж, директна линия до стаф
+═══ МАГАЗИН — КАК РАБОТИ САЙТЪТ (ВАЖНО) ═══
+- Цените на продуктите в магазина са в USD на екрана. Пълният каталог, снимки и описания са само на сайта.
+- Основен поток за поръчка: от страница на продукт — вход с Discord → код вида TICKET-XXXXXXXX → тикет в Discord с кода → staff потвърждава и дава плащане → след плащане staff маркира като платено. Ботът може да изпрати ЛС с кода (ако е настроен).
+- Количката води към Discord за продължаване на поръчката.
+- След някои онлайн плащания има страница за успех — виж payment-success.
+- За точна сума винаги насочвай към магазина — не запомняй цени наизуст.
 
-Коли:
-- Премиум Спортна Кола: 5.00 EUR (от 10.00 EUR)
-- Суперкар: 7.50 EUR (от 15.00 EUR)
-- Офроуд Пакет: 5.00 EUR (от 10.00 EUR)
+Ориентири (USD, приблизително; реалните суми са на сайта):
+- VIP пакети, слотове, донор предмети — виж shop.
+- Генг и козметика — по описание на продукта на сайта.
 
-Бизнеси:
-- Ресторант / Кафе: 10.00 EUR (от 20.00 EUR)
-- Кастом Бизнес: 17.50 EUR (от 35.00 EUR)
-- Автосервиз: 15.00 EUR (от 30.00 EUR)
+═══ АКТИВИРАНЕ И ПОДДРЪЖКА ═══
+- Покупки и кандидатури: тикет в Discord; staff отговаря в разумен срок.
+- За спор, бъг на сайта, лични данни — тикет или staff в Discord.
 
-Генг Пакети:
-- Генг Гараж: 6.49 EUR (от 12.99 EUR)
-- Генг Хазна: 4.99 EUR (от 9.99 EUR)
-- Сейфхаус: 5.49 EUR (от 10.99 EUR)
-- Хазна за Оръжия: 7.50 EUR (от 15.00 EUR)
-- Генг Превозно Средство: 5.99 EUR (от 11.99 EUR)
-- Смяна на Територия: 5.00 EUR (от 10.00 EUR)
+═══ DISCORD ═══
+- Официална покана: __DISCORD__
+- Там: правила, роли, тикети, новини. Сайтът проверява дали си в сървъра след вход с Discord.
 
-Други (месечни абонаменти):
-- Кастом Телефон: 1.49 EUR/месец (от 2.99 EUR)
-- Кастом Номера: 1.49 EUR/месец (от 2.99 EUR)
-- Къща: 5.00 EUR/месец (от 10.00 EUR)
-- Запазен Слот: 1.50 EUR/месец (от 3.00 EUR)
-- Donor: 10.00 EUR/месец (от 20.00 EUR) — 100000 IC пари, Donor роля
-- VIP Donor: 34.50 EUR/месец (от 69.00 EUR) — 1000000 IC пари, VIP Donor роля
+═══ СЛУЖЕБНИ РАЗДЕЛИ НА САЙТА ═══
+Ако има страници само за определени Discord роли — не измисляй вътрешно съдържание; кажи че достъпът е с роля и да пишат в Discord.
 
-═══ АКТИВИРАНЕ НА ПОКУПКИ ═══
-След покупка трябва да пуснеш тикет в Discord за активиране. Активирането е в рамките на 24 часа.
+═══ АКАУНТ ═══
+- Вход през сайта основно с Discord OAuth (връзка с общността и магазина).
+- Профил: поръчки и връзка с Discord.
 
-═══ РЕГИСТРАЦИЯ И АКАУНТИ ═══
-- Регистрация от бутона Вход в горната навигация
-- Регистрацията изисква имейл и парола
-- След регистрация ще получиш имейл за потвърждение
-- С акаунт можеш да следиш покупките и кандидатурите си от https://chillroleplay.store/profile
+═══ INTENT РУТИНГ ═══
+Линк винаги на нов ред в края.
+- Влизане в игра: Discord + адрес __GAME_CONNECT__.
+- Discord: __DISCORD__
+- Магазин: __SITE_BASE__/shop
+- Плащане/тикет код: накратко Discord + TICKET- код.
+- Правила: __SITE_BASE__/rules
+- Кандидатури: __SITE_BASE__/applications
+- Профил: __SITE_BASE__/profile
+- Не знам: насочи към staff в Discord
 
-═══ RP БЪРЗИ ОТГОВОРИ ═══
-- Whitelist: Не
-- Launcher: FiveM
-- Безплатен ли е: Да
-- Микрофон: Да
-- RP стил: Chill Realism
-- Custom: Да, от нулата
-
-═══ INTENT РУТИНГ (ВЪТРЕШНО) ═══
-ВАЖНО: Когато отговаряш с линк, ВИНАГИ го слагай на отделен нов ред в КРАЯ на съобщението. Никога не го слагай вътре в изречение.
-- Ако питат как да влязат: кажи да влязат в Discord и после през FiveM. Сложи Discord линка на нов ред накрая: https://discord.gg/chillroleplay
-- Ако питат къде е Discord: дай линка на нов ред: https://discord.gg/chillroleplay
-- Ако питат кога старт: кажи 20.03.2026 в 20:00
-- Ако питат къде е нещо (магазин, правила, генг, FAQ): обясни кратко и сложи съответния линк на НОВ РЕД в края
-- Ако питат за цени/продукти: дай кратък отговор + напомни за 50% до старта. Линк на нов ред: https://chillroleplay.store/shop
-- Ако питат за плащане: кажи Stripe и методите
-- Ако питат защо не е активирано: кажи тикет и 24 часа
-- Ако питат за генг или как да направят генг: обясни макс 6 члена, оригинална концепция. Линк на нов ред: https://chillroleplay.store/gangs
-- Ако питат за правила: дай правилния rules линк на нов ред
-- Ако питат за регистрация/профил: насочи към Вход. Линк на нов ред: https://chillroleplay.store/profile
-
-═══ ABUSE / ОБИДИ (СТРОГО) ═══
-Ако потребителят използва псувни, обиди, заплахи или токсично поведение:
-Отговаряш САМО с:
+═══ ABUSE (СТРОГО) ═══
+При обиди/токсичност отговори САМО:
 Ти не си chill. Спирам да си пиша с теб — пусни тикет в Discord. 🎟️
-Не добавяш нищо друго. Не спориш. Не продължаваш разговора.
 
-═══ FAILSAFE (ЗАДЪЛЖИТЕЛНО) ═══
-Ако НЕ знаеш отговора или въпросът е твърде специфичен или личен:
+═══ FAILSAFE ═══
 Не мога да отговоря на това с точност. За да получиш правилен отговор, свържи се с нашия стаф в Discord! 🎮 [REDIRECT_STAFF]
 
 ═══ DEBUG ═══
-Само ако потребителят напише точно debug, добави последен ред:
-{"intent":"SHOP","confidence":0.86,"route":"https://chillroleplay.store/shop","cta":"shop"}
+Само ако потребителят напише точно debug, последен ред:
+{"intent":"SHOP","confidence":0.86,"route":"__SITE_BASE__/shop","cta":"shop"}
 `;
 
-serve(async (req) => {
+function renderChillbotSystemPrompt(siteBase: string, discordInvite: string, gameConnect: string): string {
+  const b = (siteBase || "").replace(/\/+$/, "");
+  const d = (discordInvite || "").trim();
+  const g = (gameConnect || "").trim() || "виж началната страница и FAQ на сайта";
+  if (!b) {
+    console.error(
+      "chillbot: задай SITE_URL в Supabase → Edge Functions → chillbot → Secrets (публичният URL на сайта).",
+    );
+  }
+  const base = b || "https://configure-SITE_URL-in-supabase-secrets";
+  const disc = d || "https://discord.gg/uqAdjz6SbQ";
+  return SYSTEM_PROMPT_TEMPLATE.replace(/__SITE_BASE__/g, base)
+    .replace(/__DISCORD__/g, disc)
+    .replace(/__GAME_CONNECT__/g, g);
+}
+
+const CHILLBOT_SETTINGS_KEYS = [
+  "launch_date",
+  "trailer_date",
+  "discord_invite",
+  "announcement_text_before",
+  "chillbot_extra",
+];
+
+const SECTION_KEYS: Record<string, string[]> = {
+  service: ["service_home", "service_pravila", "service_cenorazpis"],
+  hospital: ["hospital_home", "hospital_rules", "hospital_prices"],
+  police: ["police_home"],
+  obshtina: ["obshtina_home", "obshtina_rules", "obshtina_prices"],
+};
+
+const SECTION_NAMES: Record<string, string> = {
+  service: "Сервиз",
+  hospital: "Болница",
+  police: "Полиция",
+  obshtina: "Община",
+};
+
+async function getSectionContext(
+  page: string,
+  supabase: ReturnType<typeof createClient>
+): Promise<string | null> {
+  const keys = SECTION_KEYS[page];
+  if (!keys?.length) return null;
+
+  const { data: rows, error } = await supabase
+    .from("site_settings")
+    .select("key, value")
+    .in("key", keys);
+
+  if (error || !rows?.length) return null;
+
+  const parts: string[] = [];
+  const labelByKey: Record<string, string> = {
+    service_home: "Начало (описание на секцията)",
+    service_pravila: "Правила",
+    service_cenorazpis: "Ценоразпис",
+    hospital_home: "Начало (описание на секцията)",
+    hospital_rules: "Правила",
+    hospital_prices: "Ценоразпис",
+    police_home: "Начало (описание на секцията)",
+    obshtina_home: "Начало (описание на секцията)",
+    obshtina_rules: "Правила",
+    obshtina_prices: "Ценоразпис",
+  };
+  for (const r of rows) {
+    const val = r.value != null ? String(r.value).trim() : "";
+    if (!val) continue;
+    const label = labelByKey[r.key] || r.key;
+    let content = val;
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) {
+        content = parsed
+          .map(
+            (s: { title?: string; items?: string[]; note?: string }) =>
+              (s.title ? `${s.title}\n` : "") +
+              (Array.isArray(s.items) ? s.items.map((i: string) => `- ${i}`).join("\n") : "") +
+              (s.note ? `\n${s.note}` : "")
+          )
+          .join("\n\n");
+      }
+    } catch {
+      // value is plain text
+    }
+    parts.push(`--- ${label} ---\n${content.slice(0, 8000)}`);
+  }
+  if (parts.length === 0) return null;
+  const name = SECTION_NAMES[page] || page;
+  return `Ти си TLR RP бот само за секция ${name} на проекта TLR RP. Отговаряш САМО за тази секция — правила, ценоразпис, какво как се прави. Не отговаряш за магазин, генг, други секции. Говориш на български, кратко (2–4 изречения). Не използвай кавички. Съдържанието по-долу се тегли от сайта и се обновява при редакция от админ или шеф.
+
+═══ АКТУАЛНО СЪДЪРЖАНИЕ ОТ САЙТА ═══
+${parts.join("\n\n")}`;
+}
+
+async function getChillbotContextFromSite(): Promise<string> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceKey) return "";
+
+  try {
+    const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const { data: rows, error } = await supabase
+      .from("site_settings")
+      .select("key, value")
+      .in("key", CHILLBOT_SETTINGS_KEYS);
+
+    if (error || !rows?.length) return "";
+
+    const map = new Map<string, string>();
+    for (const r of rows) {
+      if (r.value != null && String(r.value).trim()) map.set(r.key, String(r.value).trim());
+    }
+    if (map.size === 0) return "";
+
+    const lines: string[] = ["═══ АКТУАЛНИ ДАННИ ОТ САЙТА (редактират се от Админ панел) ═══"];
+    const launch = map.get("launch_date");
+    if (launch) {
+      try {
+        const d = new Date(launch);
+        if (!isNaN(d.getTime())) {
+          const bg = d.toLocaleString("bg-BG", { dateStyle: "short", timeStyle: "short" });
+          lines.push(`- Откриване на сървъра: ${bg}`);
+        }
+      } catch {
+        lines.push(`- Откриване (launch_date): ${launch}`);
+      }
+    }
+    const trailer = map.get("trailer_date");
+    if (trailer) lines.push(`- Трейлър: ${trailer}`);
+    const discord = map.get("discord_invite");
+    if (discord) lines.push(`- Discord линк: ${discord}`);
+    const announcement = map.get("announcement_text_before");
+    if (announcement) lines.push(`- Банер преди старт: ${announcement}`);
+    const extra = map.get("chillbot_extra");
+    if (extra) lines.push("", extra);
+
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, page } = body as { messages: unknown[]; page?: string | null };
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabase =
+      supabaseUrl && serviceKey
+        ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+        : null;
+
+    let discordInvite = (Deno.env.get("DISCORD_INVITE") || "").trim();
+    if (!discordInvite && supabase) {
+      const { data: discRow } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "discord_invite")
+        .maybeSingle();
+      discordInvite = (discRow?.value || "").trim();
+    }
+    if (!discordInvite) discordInvite = "https://discord.gg/uqAdjz6SbQ";
+
+    const siteBase = (Deno.env.get("SITE_URL") || "").trim().replace(/\/$/, "");
+    let gameConnect = (Deno.env.get("MINECRAFT_SERVER_ADDRESS") || "").trim();
+    if (!gameConnect && supabase) {
+      const { data: mcRow } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "minecraft_server_address")
+        .maybeSingle();
+      gameConnect = (mcRow?.value || "").trim();
+    }
+    if (!gameConnect) gameConnect = "виж началната страница и FAQ на сайта";
+    const baseSystemPrompt = renderChillbotSystemPrompt(siteBase, discordInvite, gameConnect);
+
+    let systemContent: string;
+
+    const sectionPage =
+      page === "service" || page === "hospital" || page === "police" || page === "obshtina"
+        ? page
+        : null;
+
+    if (sectionPage && supabase) {
+      const sectionPrompt = await getSectionContext(sectionPage, supabase);
+      systemContent = sectionPrompt || baseSystemPrompt;
+    } else {
+      const dynamicContext = await getChillbotContextFromSite();
+      systemContent =
+        dynamicContext ? `${baseSystemPrompt}\n\n${dynamicContext}` : baseSystemPrompt;
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+        model: "gpt-4.1-mini",
+        messages: [{ role: "system", content: systemContent }, ...messages],
         stream: true,
       }),
     });
@@ -164,7 +327,7 @@ serve(async (req) => {
         });
       }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("OpenAI error:", response.status, t);
       return new Response(JSON.stringify({ error: "ai_error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

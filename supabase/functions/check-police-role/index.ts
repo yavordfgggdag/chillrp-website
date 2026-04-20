@@ -8,8 +8,10 @@ const corsHeaders = {
 };
 
 const DISCORD_API = "https://discord.com/api/v10";
-const GUILD_ID = Deno.env.get("DISCORD_POLICE_GUILD_ID") || Deno.env.get("DISCORD_GUILD_ID") || "1471238721096646718";
-const POLICE_ROLE_ID = Deno.env.get("DISCORD_POLICE_ROLE_ID") || "1471238721515819110";
+const GUILD_ID = Deno.env.get("DISCORD_GUILD_ID") || Deno.env.get("DISCORD_POLICE_GUILD_ID") || "1471238721096646718";
+/** Роля „Полицай“ в Discord (по подразбиране поискана от екипа). */
+const POLICE_ROLE_ID = Deno.env.get("DISCORD_POLICE_ROLE_ID")?.trim() || "1471238721515819110";
+const POLICE_CHIEF_ROLE_ID = Deno.env.get("DISCORD_POLICE_CHIEF_ROLE_ID")?.trim() || "1471238721515819111";
 
 function normalizeRoleId(r: unknown): string {
   return String(r).trim();
@@ -38,19 +40,6 @@ function getDiscordUserId(user: {
   if (meta && typeof (meta as { discord_id?: string }).discord_id === "string")
     return normalizeRoleId((meta as { discord_id: string }).discord_id);
   return null;
-}
-
-/** Връща ID на ролята „Полицай“ от guild (по име или env DISCORD_POLICE_ROLE_ID). */
-async function resolvePoliceRoleId(botToken: string): Promise<string> {
-  const res = await fetch(`${DISCORD_API}/guilds/${GUILD_ID}/roles`, {
-    headers: { Authorization: `Bot ${botToken}` },
-  });
-  if (res.ok) {
-    const guildRoles: { id: string; name?: string }[] = await res.json();
-    const byName = guildRoles.find((r) => (r.name || "").trim().toLowerCase() === "полицай");
-    if (byName) return normalizeRoleId(byName.id);
-  }
-  return POLICE_ROLE_ID;
 }
 
 serve(async (req) => {
@@ -141,12 +130,14 @@ serve(async (req) => {
 
     const member = await memberRes.json();
     const roles: unknown[] = Array.isArray(member.roles) ? member.roles : [];
-    const policeRoleId = await resolvePoliceRoleId(botToken);
+    const policeRoleId = normalizeRoleId(POLICE_ROLE_ID);
     const normalizedRoles = roles.map((r) => normalizeRoleId(r));
-    const hasRole = normalizedRoles.includes(normalizeRoleId(policeRoleId));
+    const hasChief = normalizedRoles.includes(normalizeRoleId(POLICE_CHIEF_ROLE_ID));
+    const hasOfficer = normalizedRoles.includes(normalizeRoleId(policeRoleId));
+    const role = hasChief ? "chief_police" : hasOfficer ? "officer" : null;
 
     return new Response(
-      JSON.stringify({ hasRole }),
+      JSON.stringify({ hasRole: !!role, role }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

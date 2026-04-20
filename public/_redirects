@@ -1,1 +1,5 @@
-/* /index.html 200
+# Ако ползваш Netlify: добави тук пренасочване apex → www за СВОЯ домейн, напр.:
+# https://example.com/*  https://www.example.com/:splat  301!
+
+# Netlify: SPA fallback – всички пътища към index.html
+/*    /index.html   200

@@ -6,18 +6,25 @@ import { isLogActivityEnabled, sendLogActivity } from "@/lib/logActivity";
 const PAGE_NAMES: Record<string, string> = {
   "/": "Начало",
   "/shop": "Магазин",
-  "/gangs": "Генг кандидатури",
+  "/applications": "Кандидатури",
+  "/servers": "Сървъри",
+  "/modes": "Сървъри",
+  "/staff": "Екип",
+  "/rules": "Правила — хъб",
   "/rules/discord": "Discord правила",
-  "/rules/server": "Сървър правила",
-  "/rules/crime": "Crime правила",
-  "/faq": "FAQ",
+  "/rules/general": "Общи правила",
+  "/rules/chat": "Чат правила",
+  "/rules/smp": "SMP правила",
+  "/rules/factions": "Factions правила",
+  "/rules/anticheat": "Anti-cheat",
+  "/rules/punishments": "Наказания",
   "/admin": "Админ панел",
   "/profile": "Профил",
   "/payment-success": "Успешно плащане",
 };
 
-// Lower interval for maximum logging
-const MIN_INTERVAL_MS = 1500;
+// Минимален интервал за еднакви събития (за да не заспамява)
+const MIN_INTERVAL_MS = 800;
 
 export function useActivityLogger() {
   const { user } = useAuth();
@@ -25,6 +32,10 @@ export function useActivityLogger() {
   const lastLog = useRef(0);
   const lastPage = useRef("");
   const lastEvent = useRef("");
+
+  const path = location.pathname;
+  const module: string | null =
+    path.startsWith("/servers") || path.startsWith("/modes") ? "servers" : null;
 
   const log = useCallback(
     (event: string, details?: string, page?: string) => {
@@ -40,24 +51,23 @@ export function useActivityLogger() {
         details: details || "",
         user_email: user?.email || null,
         user_id: user?.id || null,
-        page: page || location.pathname,
+        page: page || path,
         timestamp: new Date().toISOString(),
+        module,
       });
     },
-    [user, location.pathname]
+    [user, path, module]
   );
 
   // Track page views
   useEffect(() => {
-    const path = location.pathname;
-    if (path === lastPage.current) return;
-    lastPage.current = path;
+    const p = location.pathname;
+    if (p === lastPage.current) return;
+    lastPage.current = p;
 
-    const pageName =
-      PAGE_NAMES[path] ||
-      (path.startsWith("/shop/") ? "Продукт" : path);
+    const pageName = PAGE_NAMES[p] || (p.startsWith("/shop/") ? "Продукт" : p.startsWith("/rules/") ? "Правила" : p);
 
-    log("page_view", `Отвори: ${pageName}`, path);
+    log("page_view", `Отвори: ${pageName}`, p);
   }, [location.pathname, log]);
 
   return log;

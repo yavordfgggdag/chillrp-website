@@ -1,35 +1,54 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, ExternalLink, Send, Loader2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { ExternalLink, Send, Loader2 } from "lucide-react";
+import mcBundled from "@/assets/tlr-mc-logo.png";
 import { DISCORD_INVITE } from "@/lib/config";
 import { toast } from "sonner";
+import { getSiteUrl } from "@/lib/siteUrl";
+import { useBranding } from "@/hooks/useBranding";
 
-const CHILLBOT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chillbot`;
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/$/, "");
+const CHILLBOT_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/chillbot` : "";
+
+/** Контекст за бота според текущата страница (legacy job subsites премахнати). */
+function getPageContext(_pathname: string): null {
+  return null;
+}
 
 type Msg = { from: "bot" | "user"; text: string; redirectStaff?: boolean };
 
-const quickReplies = [
-  { label: "🎮 Как да се присъединя?" },
-  { label: "📋 Кои са правилата?" },
-  { label: "🔫 Как да кандидатствам за ганг?" },
-  { label: "🛒 Как работи магазинът?" },
+const quickRepliesGeneral = [
+  { label: "🎮 Как да се присъединя към сървъра?" },
+  { label: "📋 Къде са правилата?" },
+  { label: "⚔️ Как да регистрирам фракция?" },
+  { label: "🛒 Какво има в магазина?" },
 ];
-
-// ✅ Единствен официален домейн
-const SITE_URL = "https://chillroleplay.store";
+const quickRepliesSection = [
+  { label: "Какви са правилата тук?" },
+  { label: "Къде е ценоразписът?" },
+  { label: "Обясни как работи секцията" },
+];
 
 // ✅ 100% маха кавички (всякакви)
 const stripQuotes = (s: string) => String(s).replace(/["'“”‘’]/g, "");
 
-// ✅ Нормализира линкове към истинския домейн + прави /shop → пълен URL
+// ✅ Нормализира линкове към текущия origin (localhost / preview / прод) + вътрешни пътища → пълен URL
 const normalizeLinks = (s: string) => {
   let out = String(s);
+  const siteUrl = getSiteUrl();
 
-  // 1) Нормализира всякакви URL-и към chillroleplay.store, ако домейнът съдържа "chill"
+  // 1) Стари домейни / chill* → текущият origin (localhost или новият прод домейн)
   out = out.replace(/https?:\/\/[^\s)]+/gi, (url) => {
     try {
       const u = new URL(url);
-      if (/chill/i.test(u.hostname)) {
-        return SITE_URL + u.pathname + u.search + u.hash;
+      const host = u.hostname.replace(/^www\./i, "").toLowerCase();
+      const legacyHost =
+        host === "chillroleplay.shop" ||
+        host === "chillroleplay.store" ||
+        /chillroleplay/i.test(host) ||
+        /chill/i.test(u.hostname);
+      if (legacyHost) {
+        return siteUrl + u.pathname + u.search + u.hash;
       }
       return url;
     } catch {
@@ -39,8 +58,8 @@ const normalizeLinks = (s: string) => {
 
   // 2) Ако ботът дава само пътища (/shop и т.н.) → правим пълен URL
   out = out.replace(
-    /(^|\s)(\/(shop|faq|profile|gangs|rules\/discord|rules\/server|rules\/crime))\b/gi,
-    (_m, p1, path) => `${p1}${SITE_URL}${path}`,
+    /(^|\s)(\/(shop|profile|gangs|rules\/discord|rules\/server|rules\/crime))\b/gi,
+    (_m, p1, path) => `${p1}${siteUrl}${path}`,
   );
 
   return out;
@@ -49,18 +68,29 @@ const normalizeLinks = (s: string) => {
 // ✅ Общ sanitize за bot output
 const sanitizeBotText = (s: string) => normalizeLinks(stripQuotes(s));
 
+const DEFAULT_BOT_GREETING =
+  "Хей! Аз съм асистентът на сайта за Minecraft сървъра.\n\nПитай за IP, режими, правила или магазина — или избери бърз въпрос.";
+
 export default function ChatWidget() {
+  const { logoUrl } = useBranding();
+  const resolvedLogo = logoUrl || mcBundled;
+  const location = useLocation();
+  const pageContext = getPageContext(location.pathname);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([
-    {
-      from: "bot",
-      text: "Хей, добре дошъл в ChillRP! 🐻‍❄️\n\nАз съм ChillBot — питай ме каквото искаш за сървъра, или избери бърз въпрос.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Msg[]>([{ from: "bot", text: DEFAULT_BOT_GREETING }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // При смяна на секция нулирай чата и покажи съответното приветствие
+  const prevContext = useRef<typeof pageContext>(null);
+  useEffect(() => {
+    if (prevContext.current !== pageContext) {
+      prevContext.current = pageContext;
+      setMessages([{ from: "bot", text: DEFAULT_BOT_GREETING }]);
+    }
+  }, [pageContext]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,22 +122,27 @@ export default function ChatWidget() {
     let redirectStaff = false;
 
     try {
+      if (!CHILLBOT_URL) {
+        toast.error("Чат ботът не е конфигуриран.");
+        setLoading(false);
+        return;
+      }
       const resp = await fetch(CHILLBOT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, page: pageContext }),
       });
 
       if (resp.status === 429) {
-        toast.error("ChillBot е претоварен. Опитай след малко.");
+        toast.error("TLR RP бот е претоварен. Опитай след малко.");
         setLoading(false);
         return;
       }
       if (resp.status === 402) {
-        toast.error("ChillBot временно не е достъпен.");
+        toast.error("TLR RP бот временно не е достъпен.");
         setLoading(false);
         return;
       }
@@ -190,26 +225,45 @@ export default function ChatWidget() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full glass-strong border border-neon-purple/50 flex items-center justify-center text-neon-purple hover:bg-neon-purple/20 glow-purple transition-all"
-        aria-label="Chat"
-      >
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
-      </button>
+      <div className="fixed bottom-6 left-6 z-[60] h-12 w-12 [filter:drop-shadow(0_0_12px_rgba(16,185,129,0.5))_drop-shadow(0_0_24px_rgba(4,120,87,0.35))_drop-shadow(0_4px_14px_rgba(0,0,0,0.65))]">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="shape-hex relative h-full w-full overflow-hidden bg-black transition-[opacity,transform] hover:opacity-95 active:scale-[0.97]"
+          aria-label={open ? "Затвори чат" : "Отвори чат с асистента"}
+        >
+          <img
+            src={resolvedLogo}
+            alt=""
+            className="logo-hex-fg pointer-events-none absolute left-1/2 top-1/2 z-10 h-full w-full max-h-none max-w-none -translate-x-1/2 -translate-y-1/2 origin-center object-contain select-none scale-[1.92]"
+            draggable={false}
+            onError={(e) => {
+              if (logoUrl) (e.currentTarget as HTMLImageElement).src = mcBundled;
+            }}
+          />
+        </button>
+      </div>
 
       {open && (
         <div
-          className="fixed bottom-24 left-6 z-50 w-80 glass-strong border border-neon-purple/30 rounded-xl overflow-hidden animate-slide-in-up shadow-2xl flex flex-col"
+          className="fixed bottom-[6.25rem] left-6 z-[60] w-80 glass-strong border-2 border-primary/50 rounded-xl overflow-hidden animate-slide-in-up shadow-2xl flex flex-col [filter:drop-shadow(0_12px_40px_rgba(0,0,0,0.55))]"
           style={{ maxHeight: "480px" }}
         >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-neon-purple/20 bg-neon-purple/10 flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-full bg-neon-purple/20 border border-neon-purple/50 flex items-center justify-center text-lg">
-              🐻‍❄️
+          <div className="px-4 py-3 border-b border-primary/20 bg-primary/10 flex items-center gap-3 shrink-0">
+            <div className="shape-hex relative h-14 w-14 shrink-0 overflow-hidden bg-black">
+              <img
+                src={resolvedLogo}
+                alt=""
+                className="logo-hex-fg absolute left-1/2 top-1/2 h-full w-full max-h-none max-w-none -translate-x-1/2 -translate-y-1/2 origin-center object-contain scale-[2.02]"
+                draggable={false}
+                onError={(e) => {
+                  if (logoUrl) (e.currentTarget as HTMLImageElement).src = mcBundled;
+                }}
+              />
             </div>
             <div>
-              <div className="text-sm font-heading font-semibold text-foreground">ChillBot</div>
+              <div className="text-sm font-heading font-semibold text-foreground">TLR RP бот</div>
               <div className="text-xs text-neon-green flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-neon-green inline-block animate-pulse" />
                 AI асистент
@@ -224,7 +278,7 @@ export default function ChatWidget() {
                 <div
                   className={`max-w-[88%] px-3 py-2 rounded-xl text-xs whitespace-pre-line leading-relaxed ${
                     msg.from === "user"
-                      ? "bg-neon-purple/20 border border-neon-purple/30 text-foreground"
+                      ? "bg-primary/20 border border-primary/30 text-foreground"
                       : "bg-muted border border-border text-muted-foreground"
                   }`}
                 >
@@ -254,7 +308,7 @@ export default function ChatWidget() {
                     href={DISCORD_INVITE}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neon-purple/20 border border-neon-purple/40 text-neon-purple text-[10px] font-heading font-semibold tracking-wider hover:bg-neon-purple/30 transition-colors"
+                    className="mt-1.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 text-primary text-[10px] font-heading font-semibold tracking-wider hover:bg-primary/30 transition-colors"
                   >
                     <ExternalLink size={10} /> Свържи се с стаф в Discord
                   </a>
@@ -291,12 +345,12 @@ export default function ChatWidget() {
                 Бързи въпроси
               </div>
               <div className="flex flex-col gap-1">
-                {quickReplies.map((r) => (
+                {(pageContext ? quickRepliesSection : quickRepliesGeneral).map((r) => (
                   <button
                     key={r.label}
                     onClick={() => sendMessage(r.label)}
                     disabled={loading}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-neon-purple/20 text-left text-foreground/70 hover:text-neon-purple hover:bg-neon-purple/10 hover:border-neon-purple/40 transition-colors font-body disabled:opacity-50"
+                    className="text-xs px-3 py-1.5 rounded-lg border border-primary/20 text-left text-foreground/70 hover:text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors font-body disabled:opacity-50"
                   >
                     {r.label}
                   </button>
@@ -316,12 +370,13 @@ export default function ChatWidget() {
                 onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
                 placeholder="Пиши тук..."
                 disabled={loading}
-                className="flex-1 px-3 py-2 rounded-xl glass border border-white/10 focus:border-neon-purple/50 focus:outline-none text-xs font-body text-foreground placeholder:text-muted-foreground bg-transparent disabled:opacity-50"
+                className="flex-1 px-3 py-2 rounded-xl glass border border-white/10 focus:border-primary/50 focus:outline-none text-xs font-body text-foreground placeholder:text-muted-foreground bg-transparent disabled:opacity-50"
               />
               <button
+                type="button"
                 onClick={() => sendMessage(input)}
                 disabled={loading || !input.trim()}
-                className="w-8 h-8 rounded-xl bg-neon-purple/30 border border-neon-purple/40 flex items-center justify-center text-neon-purple hover:bg-neon-purple/50 transition-colors disabled:opacity-40 shrink-0"
+                className="shape-hex w-8 h-8 overflow-hidden bg-primary/35 text-primary ring-1 ring-inset ring-primary/50 flex items-center justify-center hover:bg-primary/50 transition-colors disabled:opacity-40 shrink-0 [filter:drop-shadow(0_0_6px_rgba(16,185,129,0.35))]"
               >
                 {loading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
               </button>
@@ -331,7 +386,7 @@ export default function ChatWidget() {
               href={DISCORD_INVITE}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 w-full py-2 mt-2 rounded-lg bg-transparent border border-white/10 text-muted-foreground/60 text-[10px] font-heading tracking-wider hover:border-neon-purple/30 hover:text-neon-purple transition-colors"
+              className="flex items-center justify-center gap-1.5 w-full py-2 mt-2 rounded-lg bg-transparent border border-white/10 text-muted-foreground/60 text-[10px] font-heading tracking-wider hover:border-primary/30 hover:text-primary transition-colors"
             >
               <ExternalLink size={10} /> Свържи се директно с стаф
             </a>

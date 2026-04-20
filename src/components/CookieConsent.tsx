@@ -53,17 +53,22 @@ export default function CookieConsent() {
     >
       <div className="container mx-auto max-w-4xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="flex items-start gap-3 flex-1">
-          <div className="rounded-lg bg-neon-purple/15 p-2 shrink-0">
-            <Cookie className="h-5 w-5 text-neon-purple" aria-hidden />
+          <div className="rounded-lg bg-primary/15 p-2 shrink-0">
+            <Cookie className="h-5 w-5 text-primary" aria-hidden />
           </div>
           <div>
             <h3 className="font-heading font-bold text-foreground tracking-wide mb-1">
               Използваме бисквитки
             </h3>
             <p className="text-sm text-muted-foreground font-body">
-              За да работи сайтът правилно и за анализиране на трафика използваме бисквитки в съответствие с Регламент (ЕС) 2016/679 (GDPR) и ePrivacy. Можете да приемате всички или да отхвърлите неизправните за съгласие.{" "}
-              <Link to="/cookies" className="text-neon-purple hover:underline font-semibold">
-                Политика за бисквитки
+              Използваме строго необходими бисквитки/сесия за вход и сигурност. Не зареждаме аналитика на трети страни, докато не я въведем и не поискаме съгласие. Можете да приемете всички предложени настройки или да отхвърлите{" "}
+              <span className="text-foreground/90">незадължителните</span> за банера (детайли в политиките).{" "}
+              <Link to="/cookies" className="text-primary hover:underline font-semibold">
+                Бисквитки
+              </Link>
+              {" · "}
+              <Link to="/privacy" className="text-primary hover:underline font-semibold">
+                Поверителност
               </Link>
             </p>
           </div>
@@ -75,11 +80,11 @@ export default function CookieConsent() {
             className="border-white/20 text-muted-foreground hover:text-foreground"
             onClick={reject}
           >
-            Отхвърли неизправни
+            Отхвърли незадължителните
           </Button>
           <Button
             size="sm"
-            className="bg-neon-purple hover:bg-neon-purple/90 text-white glow-purple"
+            className="bg-primary hover:bg-primary/90 text-white glow-accent"
             onClick={accept}
           >
             Приемам всички

@@ -1,3 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA (React Router) — всички пътища към index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"

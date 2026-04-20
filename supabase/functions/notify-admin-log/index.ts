@@ -1,16 +1,44 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Max-Age": "86400",
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
 
   try {
-    const WEBHOOK_URL = Deno.env.get("DISCORD_ADMIN_LOG_WEBHOOK_URL");
-    if (!WEBHOOK_URL) throw new Error("DISCORD_ADMIN_LOG_WEBHOOK_URL не е конфигуриран");
-
     const { action, details, admin_email } = await req.json();
+    const adminEmail = admin_email || "неизвестен";
+
+    // Запис в web_logs – всеки админ лог с акаунта, който е направил действието
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && supabaseServiceKey) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
+        await supabase.from("web_logs").insert({
+          event: `admin_${action}`,
+          details: details || "",
+          page: "/admin",
+          user_email: adminEmail,
+          module: "admin",
+        });
+      } catch (dbErr) {
+        console.error("notify-admin-log web_logs insert:", dbErr);
+      }
+    }
+
+    const WEBHOOK_URL = Deno.env.get("DISCORD_ADMIN_LOG_WEBHOOK_URL");
+    if (!WEBHOOK_URL) {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const colorMap: Record<string, number> = {
       create: 0x2ecc71,
@@ -41,10 +69,10 @@ Deno.serve(async (req) => {
           color,
           description: details || "Няма допълнителни детайли.",
           fields: [
-            { name: "👤 Админ", value: admin_email || "Неизвестен", inline: true },
+            { name: "👤 Акаунт", value: adminEmail, inline: true },
             { name: "🕐 Време", value: new Date().toLocaleString("bg-BG", { timeZone: "Europe/Sofia" }), inline: true },
           ],
-          footer: { text: "ChillRP Admin Logs" },
+          footer: { text: "TLR Admin Logs" },
           timestamp: new Date().toISOString(),
         },
       ],

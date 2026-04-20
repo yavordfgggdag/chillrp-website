@@ -3,23 +3,46 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Max-Age": "86400",
 };
 
 const DISCORD_API = "https://discord.com/api/v10";
 const GUILD_ID = Deno.env.get("DISCORD_GUILD_ID") || Deno.env.get("DISCORD_POLICE_GUILD_ID") || "1471238721096646718";
 
-// Резервни ID-та ако съвпадение по име не се намери (различен сървър)
-const FALLBACK_ROLE_STAFF = "1471238721549504764";
-const FALLBACK_ROLE_ADMINISTRATOR = "1471238721566146796";
+/** Синхрон със STAFF_SYNC_SETUP.md — staff = долните тиерове; administrator = горните. */
+const SITE_STAFF_DEFS: { name: string; fallbackId: string }[] = [
+  { name: "support team", fallbackId: "1471238721549504763" },
+  { name: "staff", fallbackId: "1471238721549504765" },
+  { name: "staff leader", fallbackId: "1471238721549504766" },
+];
+const SITE_ADMIN_DEFS: { name: string; fallbackId: string }[] = [
+  { name: "administrator", fallbackId: "1471238721566146791" },
+  { name: "developer", fallbackId: "1471238721566146793" },
+  { name: "panel engineer", fallbackId: "1486054158753726637" },
+  { name: "owner", fallbackId: "1471238721566146796" },
+];
 
 function normalizeRoleId(r: unknown): string {
   return String(r).trim();
 }
 
-/** Взима ролите на сървъра от Discord и връща ID за Staff и за Administrator/Основател (по име, с fallback). */
-async function resolveSiteRoleIds(botToken: string): Promise<{ staffRoleId: string; administratorRoleIds: string[] }> {
+function uniqIds(ids: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    const n = normalizeRoleId(id);
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    out.push(n);
+  }
+  return out;
+}
+
+/** Взима ролите на сървъра от Discord и връща ID-та за site staff / administrator (по име, с fallback). */
+async function resolveSiteRoleIds(botToken: string): Promise<{ staffRoleIds: string[]; administratorRoleIds: string[] }> {
   const res = await fetch(`${DISCORD_API}/guilds/${GUILD_ID}/roles`, {
     headers: { Authorization: `Bot ${botToken}` },
   });
@@ -34,13 +57,17 @@ async function resolveSiteRoleIds(botToken: string): Promise<{ staffRoleId: stri
   } else {
     console.error("resolveSiteRoleIds: guild roles request failed", res.status, await res.text());
   }
-  const staffRoleId = roleIdByName.get("staff") || FALLBACK_ROLE_STAFF;
-  const adminIds: string[] = [];
-  if (roleIdByName.get("основател")) adminIds.push(roleIdByName.get("основател")!);
-  if (roleIdByName.get("administrator")) adminIds.push(roleIdByName.get("administrator")!);
-  if (roleIdByName.get("owner")) adminIds.push(roleIdByName.get("owner")!);
-  if (adminIds.length === 0) adminIds.push(FALLBACK_ROLE_ADMINISTRATOR);
-  return { staffRoleId, administratorRoleIds: adminIds };
+
+  const staffRoleIds = SITE_STAFF_DEFS.map((d) => roleIdByName.get(d.name) || d.fallbackId);
+  const administratorRoleIds: string[] = SITE_ADMIN_DEFS.map((d) => roleIdByName.get(d.name) || d.fallbackId);
+  // Стари имена / алиаси
+  if (roleIdByName.get("ceo")) administratorRoleIds.push(roleIdByName.get("ceo")!);
+  if (roleIdByName.get("основател")) administratorRoleIds.push(roleIdByName.get("основател")!);
+
+  return {
+    staffRoleIds: uniqIds(staffRoleIds),
+    administratorRoleIds: uniqIds(administratorRoleIds),
+  };
 }
 
 function getDiscordUserId(user: {
@@ -69,7 +96,7 @@ function hasRole(memberRoles: string[] | unknown[], roleId: string): boolean {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -102,7 +129,7 @@ serve(async (req) => {
       );
     }
 
-    const { staffRoleId, administratorRoleIds } = await resolveSiteRoleIds(botToken);
+    const { staffRoleIds, administratorRoleIds } = await resolveSiteRoleIds(botToken);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -184,7 +211,7 @@ serve(async (req) => {
     const roleIds = roles.map((r) => normalizeRoleId(r));
     let role: "citizen" | "staff" | "administrator" = "citizen";
     if (administratorRoleIds.some((id) => roleIds.includes(normalizeRoleId(id)))) role = "administrator";
-    else if (roleIds.includes(normalizeRoleId(staffRoleId))) role = "staff";
+    else if (staffRoleIds.some((id) => roleIds.includes(normalizeRoleId(id)))) role = "staff";
 
     // Ако е администратор в Discord, синхронизирай роля admin в user_roles за да може да трие/редактира в админ панела (RLS).
     if (role === "administrator" && user.id) {
@@ -195,7 +222,7 @@ serve(async (req) => {
     }
 
     if (role === "citizen") {
-      console.error("check-site-role: no matching role", { discordUserId, roleIds, staffRoleId, administratorRoleIds });
+      console.error("check-site-role: no matching role", { discordUserId, roleIds, staffRoleIds, administratorRoleIds });
     }
 
     return new Response(

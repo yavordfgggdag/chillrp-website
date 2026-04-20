@@ -1,5 +1,5 @@
 -- =============================================================================
--- ChillRP – един файл за първо прилагане в Supabase (SQL Editor)
+-- TLR – един файл за първо прилагане в Supabase (SQL Editor)
 -- Копирай целия файл и го пусни в Supabase Dashboard → SQL Editor → New query → Run
 -- =============================================================================
 
@@ -34,9 +34,11 @@ DROP POLICY IF EXISTS "Anyone can submit gang application" ON public.gang_applic
 DROP POLICY IF EXISTS "Admins can view all applications" ON public.gang_applications;
 DROP POLICY IF EXISTS "Admins can update applications" ON public.gang_applications;
 DROP POLICY IF EXISTS "Users can view own applications" ON public.gang_applications;
+DROP POLICY IF EXISTS "Admins can delete applications" ON public.gang_applications;
 CREATE POLICY "Anyone can submit gang application" ON public.gang_applications FOR INSERT WITH CHECK (true);
 CREATE POLICY "Admins can view all applications" ON public.gang_applications FOR SELECT USING (true);
 CREATE POLICY "Admins can update applications" ON public.gang_applications FOR UPDATE USING (true);
+CREATE POLICY "Admins can delete applications" ON public.gang_applications FOR DELETE TO authenticated USING (true);
 CREATE POLICY "Users can view own applications" ON public.gang_applications FOR SELECT USING (auth.uid() = user_id);
 
 -- 3) User roles
@@ -235,6 +237,50 @@ DROP TRIGGER IF EXISTS update_site_settings_updated_at ON public.site_settings;
 CREATE TRIGGER update_site_settings_updated_at BEFORE UPDATE ON public.site_settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- 14) Storage bucket (за качване на снимки)
-INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', true) ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Политики за storage.objects – админите да могат да качват/трият
+DROP POLICY IF EXISTS "Anyone can view uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload files" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can delete uploads" ON storage.objects;
+CREATE POLICY "Anyone can view uploads" ON storage.objects FOR SELECT USING (bucket_id = 'uploads');
+CREATE POLICY "Admins can upload files" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'uploads' AND public.has_role(auth.uid(), 'admin'::public.app_role));
+CREATE POLICY "Admins can update uploads" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'uploads' AND public.has_role(auth.uid(), 'admin'::public.app_role));
+CREATE POLICY "Admins can delete uploads" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'uploads' AND public.has_role(auth.uid(), 'admin'::public.app_role));
+
+-- 15) FREE GANG: блокира INSERT при site_settings.gang_applications_open = false (след site_settings)
+CREATE OR REPLACE FUNCTION public.gang_applications_inserts_allowed()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (
+      SELECT CASE lower(trim(both from value))
+        WHEN 'false' THEN false
+        WHEN '0' THEN false
+        WHEN 'no' THEN false
+        WHEN 'off' THEN false
+        WHEN 'затворено' THEN false
+        WHEN 'затворени' THEN false
+        WHEN 'не' THEN false
+        ELSE true
+      END
+      FROM public.site_settings
+      WHERE key = 'gang_applications_open'
+      LIMIT 1
+    ),
+    true
+  );
+$$;
+DROP POLICY IF EXISTS "Anyone can submit gang application" ON public.gang_applications;
+DROP POLICY IF EXISTS "Submit gang application when open" ON public.gang_applications;
+CREATE POLICY "Submit gang application when open"
+ON public.gang_applications
+FOR INSERT
+WITH CHECK (public.gang_applications_inserts_allowed());
 
 -- Готово. Презареди http://localhost:8080/admin и 404 грешките трябва да изчезнат.
